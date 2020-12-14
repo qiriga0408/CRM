@@ -5,16 +5,16 @@
          <el-input v-model="listQuery.superior" size="mini" placeholder="上级代理ID/用户名" style="width:150px;margin-left:20px" class="filter-item" @keyup.enter.native="handleFilter" />
          <!-- <div class="block"> -->
             <el-select size="mini" v-model="listQuery.contract_code" placeholder="合约" clearable   style="width: 120px;margin-left:20px;" class="filter-item">
-              <el-option v-for="(item,index) in contractCodeOptions" :key="index" :label="item.contract_type_name" :value="item.key" />
+              <el-option v-for="(item,index) in code" :key="index" :label="item.contract_code" :value="item.contract_code" />
          </el-select>
-          <el-select size="mini" v-model="listQuery.account_type" placeholder="仓位类型" clearable   style="width: 120px;margin-left:20px;margin-top:10px;" class="filter-item">
+          <el-select size="mini" v-model="listQuery.account_type" placeholder="仓位类型"   style="width: 120px;margin-left:20px;margin-top:10px;" class="filter-item">
               <el-option v-for="(item,index) in accountTypeOptions" :key="index" :label="item.position_type_name" :value="item.key" />
          </el-select>
            <el-select size="mini" v-model="listQuery.side" placeholder="方向" clearable   style="width: 120px;margin-left:20px;margin-top:10px;" class="filter-item">
               <el-option v-for="(item,index) in sideOptions" :key="index" :label="item.position_type_name" :value="item.key" />
          </el-select>
          
-          <el-button  class="filter-item" size="mini" type="primary"  @click="handleFilter">
+          <el-button  class="filter-item" style="margin-left:10px;" size="mini" type="primary"  @click="handleFilter">
            <!-- @click="handleFilter" -->
             搜索
         </el-button>
@@ -44,7 +44,7 @@
           <span>{{row.account}}</span>
         </template>
       </el-table-column>
-      <el-table-column label="上级用户id" align="center" min-width="95px">
+      <el-table-column label="上级用户id" align="center" min-width="90px">
         <template slot-scope="{row}">
           <span>{{row.superior_uid}}</span>
         </template>
@@ -59,13 +59,13 @@
               <span>{{row.contract_code}}</span>
             </template>
       </el-table-column>
-       <el-table-column label="仓位类型" min-width="90px" align="center">
+       <el-table-column label="仓位类型" min-width="80px" align="center">
             <template slot-scope="{row}">
             <span v-if="row.account_type == '1'">全仓</span>
             <span v-else-if="row.account_type == '2'">逐仓</span>
             </template>
       </el-table-column>
-       <el-table-column label="方向" min-width="90px" align="center">
+       <el-table-column label="方向" min-width="80px" align="center">
             <template slot-scope="{row}">
             <span v-if="row.side == 'B'">做多</span>
             <span v-else-if="row.side == 'S'">做空</span>
@@ -76,9 +76,9 @@
             <span>{{row.lever}}</span>
         </template>
       </el-table-column>
-      <el-table-column label="张数" align="center" min-width="60px">
+      <el-table-column label="数量" align="center" min-width="100px">
         <template slot-scope="{row}">
-            <span>{{row.volume}}</span>
+             <span>{{row.volume}}张</span><span>/{{row.amount}}{{row.base_name}}</span>
         </template>
       </el-table-column>
       <el-table-column label="开仓均价" align="center" min-width="90px">
@@ -96,16 +96,16 @@
             <span>{{row.force_price}}</span>
         </template>
       </el-table-column>
-      <el-table-column label="止盈价" align="center" min-width="90px">
+      <el-table-column label="止盈价" align="center" min-width="70px">
         <template slot-scope="{row}">
             <span v-if="row.limit == '0'">-</span>
             <span v-else>{{row.limit}}</span>
         </template>
       </el-table-column>
-      <el-table-column label="止损价" align="center" min-width="90px">
+      <el-table-column label="止损价" align="center" min-width="70px">
         <template slot-scope="{row}">
              <span v-if="row.stop == '0'">-</span>
-            <span v-else>{{row.limit}}</span>
+            <span v-else>{{row.stop}}</span>
         </template>
       </el-table-column>
        <el-table-column label="浮动盈亏" align="center" min-width="90px">
@@ -129,11 +129,7 @@ import { parseTime } from '@/utils'
 import waves from '@/directive/waves'
 //引入封装接口
 import {holdList,holdExport} from '@/api/transactionQuery'
-
-    const contractCodeOptions = [
-        {key:'BTCUSDT',contract_type_name:'BTCUSDT'},
-        {key:'ETHUSDT',contract_type_name:'ETHUSDT'},
-    ]
+import Cookies from 'js-cookie'
 
     const accountTypeOptions = [
         {key:0, position_type_name:'全部类型'},
@@ -151,8 +147,6 @@ export default {
  return {
      //导出加载中效果
       downloadLoading:false,
-     //合约类型
-     contractCodeOptions,
      //仓位类型
      accountTypeOptions,
      //方向
@@ -169,7 +163,6 @@ export default {
         account: '',//UID/手机/邮箱
         user_type:'',//用户类型 0-不过滤 1-代理用户 2-直推用户
         superior:'',//上级代理ID/用户名
-       
       },
         page:{//分页参数
           size:1,//页码(从0开始)
@@ -181,6 +174,7 @@ export default {
       holdList:null,
       //总条数，默认为0
       total:0,
+      code:[]
     };
  },
 
@@ -190,6 +184,8 @@ export default {
 
  mounted(){
      this.getList()
+   this.code =  JSON.parse(Cookies.get('contract_list'))
+    // console.log(this.code)
  },
 
  methods: {
@@ -218,14 +214,11 @@ export default {
               if(that.page.size==1){
                  that.total = response.data.total_count
               }
-              setTimeout(() => {
-              // 过了1.5秒就关闭
               that.listLoading = false
-            }, 1500);
           }else{
           this.$message.error('请求不到数据');
           }
-          console.log(that.holdList)
+          // console.log(that.holdList)
             
         })
     },

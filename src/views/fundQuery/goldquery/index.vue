@@ -4,32 +4,31 @@
             <el-input size="mini" v-model="listQuery.account" placeholder="UID/手机/邮箱" style="width:150px;" class="filter-item" @keyup.enter.native="handleFilter"/>
                 <el-input v-model="listQuery.superior " size="mini" placeholder="上级代理ID/用户名" style="width:150px;margin-left:20px" class="filter-item"  @keyup.enter.native="handleFilter"/>
                  <el-select size="mini" v-model="listQuery.coin" placeholder="币种" clearable   style="width: 120px;margin-left:20px;margin-top:10px;" class="filter-item">
-              <el-option v-for="(item,index) in coinOptions" :key="index" :label="item.Currency_name" :value="item.key" />
+              <el-option v-for="(item,index) in coin" :key="index" :label="item.currency_name" :value="item.currency_name" />
              </el-select>
-              <el-select size="mini" v-model="listQuery.order_type" placeholder="订单类型" clearable   style="width: 120px;margin-left:20px;" class="filter-item">
+              <el-select size="mini" v-model="listQuery.order_type" placeholder="订单类型"   style="width: 120px;margin-left:20px;" class="filter-item">
               <el-option v-for="(item,index) in orderTypeOptions" :key="index" :label="item.position_type_name" :value="item.key" />
              </el-select>
              <span style="margin-left:20px;font-size:12px;">成交时间</span>
             <el-date-picker
             style="width:220px;margin-top:10px;"
-              v-model="listQuery.trade_time"
+              v-model="filterTime"
               size="mini"
               type="daterange"
               range-separator="-"
               start-placeholder="起始日期"
               end-placeholder="结束日期"
               value-format="timestamp"
+              @change='filterTimeTransform'
               >
             </el-date-picker>
-           
-            <el-button  class="filter-item" size="mini" type="primary" @click="handleFilter">
+            <el-button  class="filter-item" size="mini" style="margin-left:10px;" type="primary" @click="handleFilter">
                 搜索
             </el-button>
             <el-button class="filter-item" :loading="downloadLoading" @click="handleDownload" size="mini" type="success" >
                 导出
             </el-button>
         </div>
-
           <el-table
             v-loading="listLoading"
             :data="goldList"
@@ -40,7 +39,6 @@
             :header-cell-style="{'background':'#F0F8FF'}"
             >
       <el-table-column label="UID" prop="uid"  align="center" min-width="60" >
-      <!-- sortable="custom" :class-name="getSortClass('id')" -->
         <template slot-scope="{row}">
           <span>{{ row.user_id }}</span>
         </template>
@@ -63,8 +61,6 @@
       <el-table-column label="币种" align="center" min-width="100px">
         <template slot-scope="{row}">
             <span>{{row.coin}}</span>
-            <!-- <span v-if="row.coin == 'USDT'">USDT</span>
-            <span v-else-if="row.coin == 'BTC'">BTC</span> -->
         </template>
       </el-table-column>
          <el-table-column label="金额" min-width="90px" align="center">
@@ -89,100 +85,65 @@
             <span>{{row.trade_time|parseTime('{y}-{m}-{d} {h}:{i}')}}</span>
         </template>
       </el-table-column>
-     
     </el-table>
-
- <pagina-tion :total="total" :page.sync="page.size" :limit.sync="page.count" @pagination="getList" /> 
-
-   
-
+      <pagina-tion :total="total" :page.sync="page.size" :limit.sync="page.count" @pagination="getList" /> 
     </div>
 </template>
-
 <script>
 import {goldList , goldExport} from '@/api/fundQuery'
 // 转换时间的在src/utils.index.js
 import { parseTime } from '@/utils'
 import { start } from 'nprogress'
-
-const coinOptions = [
-    {key:'USDT',Currency_name:'USDT'},
-     {key:'BTC',Currency_name:'BTC'}
-]
+import Cookies from 'js-cookie'
    const orderTypeOptions = [
       {key:0,position_type_name:'全部订单'},
       {key:1, position_type_name:'充币'},
       {key:2, position_type_name:'提币'},
       {key:64, position_type_name:'法币入金'},
     ]
-
 export default {
     name:'goldquery',
  data () {
- return {
-      //表格下载
-     downloadLoading:false,
-     coinOptions,
-     orderTypeOptions,
-       //表格加载中效果
-        listLoading:false,
-     //页数页码以及搜索
-       listQuery: {
-        account: '',//UID/手机/邮箱
-        superior:'',
-        coin:'',//币种
-        order_type:0,//交易类型 -1-不筛选 0: 市价单 1：计划单 2：止盈单 4：止损单 5：强平单
-        trade_time:[],//成交时间
-        
-      },
-       page:{//分页参数
-          size:1,//页码(从0开始)
-          count:10//单页数据量(最大100)
+  return {
+        //表格下载
+      downloadLoading:false,
+      orderTypeOptions,
+        //表格加载中效果
+          listLoading:false,
+      //页数页码以及搜索
+        listQuery: {
+          account: '',//UID/手机/邮箱
+          superior:'',
+          coin:'',//币种
+          order_type:0,//交易类型 -1-不筛选 0: 市价单 1：计划单 2：止盈单 4：止损单 5：强平单
+          trade_time:{
+            start:undefined,
+            end:undefined
+          },//成交时间
         },
-      goldList:null,
-      total:0,
-      newList:[]
-    };
+        page:{//分页参数
+            size:1,//页码(从0开始)
+            count:10//单页数据量(最大100)
+          },
+        filterTime:[],
+        goldList:null,
+        total:0,
+        coin:[]
+      };
  },
-
  components: {},
-
  computed: {},
-
  mounted(){
      this.getList();
+     this.coin = JSON.parse(Cookies.get('currency_list'))
  },
 
  methods: {
-    //监听页数改变的事件
-      handleSizeChange(newSize){
-        //   console.log(newSize)
-          this.listQuery.page.count+=newSize
-          this.getList();
-      },
-      //监听页码值改变的事件
-      handleCurrentChange(newPage){
-          this.listQuery.page._page=newPage
-          this.getList();
-        //   console.log(newPage)
-      },
       //  渲染table列表
        getList(){
         var that = this
         //开始有加载中效果
         that.listLoading = true
-         let starttime = null,stoptime = null
-            if (that.listQuery.trade_time) {
-              if (that.listQuery.trade_time.length === 2) {
-                starttime = that.listQuery.trade_time[0];
-                stoptime = that.listQuery.trade_time[1];
-              } else if (that.listQuery.trade_time.length === 1) {
-                starttime = that.listQuery.trade_time[0];
-              }
-              // console.log(that.listQuery.register_time.length);
-            } else {
-              console.log("没有选择任何时间");
-            }
         var data = {
             page:{
               page:that.page.size-1,
@@ -193,8 +154,8 @@ export default {
             coin:that.listQuery.coin,
             order_type:that.listQuery.order_type,
             trade_time:{
-              start:starttime/1000,
-              end:stoptime/1000
+              start:that.listQuery.trade_time.start,
+              end:that.listQuery.trade_time.end
             }
         }
         goldList({data}).then(response=>{
@@ -203,17 +164,10 @@ export default {
                if(that.page.size==1){
                   that.total = response.data.total_count
                }
-              
-              // console.log(that.goldList)
-            // 过了1.5秒就关闭
-               setTimeout(() => {
                     this.listLoading = false
-                    }, 1.5 * 1000)
-                
           }else{
              that.$message.error('数据未请求到!!')
           }
-
       })
     },
          // 搜索事件
@@ -224,26 +178,14 @@ export default {
        handleDownload() {
        var that = this
         that.downloadLoading = true
-        let starttime = 0,stoptime = 0
-              if (that.listQuery.trade_time) {
-                if (that.listQuery.trade_time.length === 2) {
-                  starttime = that.listQuery.trade_time[0];
-                  stoptime = that.listQuery.trade_time[1];
-                } else if (that.listQuery.trade_time.length === 1) {
-                  starttime = that.listQuery.trade_time[0];
-                }
-                // console.log(that.listQuery.register_time.length);
-              } else {
-                console.log("没有选择任何时间");
-              }
               var data = {
                   account:that.listQuery.account,
                   superior:that.listQuery.superior,
                   coin:that.listQuery.coin,
                   order_type:this.listQuery.order_type,
                   trade_time:{
-                    start:starttime/1000,
-                    end:stoptime/1000
+                    start:that.listQuery.trade_time.start,
+                    end:that.listQuery.trade_time.end
                   }
               }
         goldExport({data}).then(res=>{
@@ -261,9 +203,12 @@ export default {
           }
         })
     },
+     filterTimeTransform(val) {
+      this.listQuery.trade_time.start = val && val[0]/1000 || undefined
+      this.listQuery.trade_time.end= val && (val[1]+86399000)/1000 || undefined;
+    },
  }
 }
-
 </script>
 <style lang="scss" scoped>
 

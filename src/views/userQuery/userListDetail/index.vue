@@ -1,8 +1,6 @@
 <template>
   <div class="userlistdetail-container">
     
-
-
   <el-row :gutter="6" style="border:1px solid grey;width:99.5%;margin:20px auto"> 
       <el-col :xs="8" :sm="8" :md="8" :lg="8" :xl="8"> 
         <div class="grid-content">
@@ -38,7 +36,7 @@
         <div class="grid-content"></div>
         <div class="grid-content">
             <span class="grid-content-left">最后登录IP:</span>
-            <span class="grid-content-right">{{ListDetail.login_ip}}</span>
+            <span class="grid-content-right">{{ListDetails.login_ip}}</span>
         </div>
       </el-col>
     </el-row>
@@ -65,7 +63,7 @@
         </div>
          <div class="grid-content">
             <span class="grid-content-left">手续费返佣比例:</span>
-            <span class="grid-content-right">{{ListDetails.rebate_rate}}</span>
+            <span class="grid-content-right">{{ListDetails.rebate_rate}}%</span>
         </div>
        
      </el-col>

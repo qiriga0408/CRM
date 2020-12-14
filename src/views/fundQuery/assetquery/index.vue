@@ -2,8 +2,7 @@
     <div class="asset-container">
          <div class="filter-container">
               <el-input size="mini" v-model="listQuery.account" placeholder="UID/手机/邮箱" style="width:150px;" class="filter-item" @keyup.enter.native="handleFilter"/>
-             <el-input v-model="listQuery.superior" size="mini" placeholder="上级代理ID/用户名" style="width:130px;margin-left:20px;margin-top:10px;" class="filter-item" @keyup.enter.native="handleFilter" />
-
+             <el-input v-model="listQuery.superior" size="mini" placeholder="上级代理ID/用户名" style="width:150px;margin-left:20px;margin-top:10px;" class="filter-item" @keyup.enter.native="handleFilter" />
             <el-button  style="margin-top:10px;margin-left:10px;" class="filter-item" size="mini" type="primary" @click="handleFilter">
                 搜索
             </el-button>
@@ -11,8 +10,6 @@
                 导出
             </el-button>
           </div>
-            
-
           <el-table
             v-loading="listLoading"
             :data="assetList"
@@ -21,10 +18,8 @@
             highlight-current-row
             style="width: 100%;margin-top:30px;"
             :header-cell-style="{'background':'#F0F8FF'}"
-
             >
       <el-table-column label="UID" prop="uid"  align="center" min-width="60" >
-      <!-- sortable="custom" :class-name="getSortClass('id')" -->
         <template slot-scope="{row}">
           <span>{{ row.user_id }}</span>
         </template>
@@ -84,17 +79,17 @@
             <span>{{row.commission}}</span>
         </template>
       </el-table-column>
-       <el-table-column label="浮动PNL" align="center" min-width="90px">
+       <el-table-column label="浮动PNL" align="center" min-width="90px" v-if="pnl_per==true">
         <template slot-scope="{row}">
             <span>{{row.float_pnl}}</span>
         </template>
       </el-table-column>
-       <el-table-column label="平仓PNL" align="center" min-width="90px">
+       <el-table-column label="平仓PNL" align="center" min-width="90px" v-if="pnl_per==true">
         <template slot-scope="{row}">
             <span>{{row.close_pnl}}</span>
         </template>
       </el-table-column>
-      <el-table-column label="净PNL" align="center" min-width="90px">
+      <el-table-column label="净PNL" align="center" min-width="90px" v-if="pnl_per==true">
         <template slot-scope="{row}">
             <span>{{row.net_pnl}}</span>
         </template>
@@ -106,8 +101,7 @@
             </template>
       </el-table-column>
     </el-table>
-
-   <pagina-tion :total="total" :page.sync="page.size" :limit.sync="page.count" @pagination="getList" />
+      <pagina-tion :total="total" :page.sync="page.size" :limit.sync="page.count" @pagination="getList" />
     </div>
 </template>
 
@@ -125,7 +119,6 @@ export default {
       listLoading: false,
       //  控制高级筛选
       filters: true,
-     
       //表格下载
       downloadLoading: false,
      //页数页码以及搜索
@@ -140,7 +133,7 @@ export default {
       //table表格接收数据
       assetList: null,
       total: 0,
-      newList:[]
+      pnl_per:''
     };
   },
 
@@ -151,7 +144,6 @@ export default {
   mounted() {
     this.getList();
   },
-
   methods: {
     //  渲染table列表
     getList() {
@@ -169,14 +161,12 @@ export default {
       assetList({data}).then((response) => {
         if(response.ret==0){
             that.assetList = response.data.list;
+            that.pnl_per = response.data.pnl_permission
+            console.log(that.pnl_per)
             if(that.page.size==1){
               that.total = response.data.total_count;
             }
-            //  console.log(that.assetList);
-               // 过了1.5秒就关闭
-              setTimeout(() => {
                 this.listLoading = false;
-              }, 1.5 * 1000);
         }else{
           that.$message.error('数据未请求到!!')
         }
@@ -190,7 +180,7 @@ export default {
     handleDownload() {
       this.downloadLoading = true;
         var data = {
-          account:this.listQuery.acccount,
+          account:this.listQuery.account,
           superior:this.listQuery.superior
         }
         assetExport({data}).then(res=>{
@@ -203,8 +193,6 @@ export default {
              this.downloadLoading = false
           }
         })
-      
-      
     },
   },
 };

@@ -5,26 +5,27 @@
                <div class="filter-container">
                     <el-input size="mini" v-model="listQuery.account" placeholder="UID/手机/邮箱" style="width:150px;" class="filter-item" @keyup.enter.native="handleFilter"/>
                     <el-input v-model="listQuery.superior " size="mini" placeholder="上级代理ID/用户名" style="width:150px;margin-left:20px" class="filter-item"  @keyup.enter.native="handleFilter"/>
-                     <el-select size="mini" v-model="listQuery.coin" placeholder="币种" clearable   style="width: 120px;margin-left:20px;margin-top:10px;" class="filter-item">
-                      <el-option v-for="(item,index) in coinOptions" :key="index" :label="item.Currency_name" :value="item.key" />
+                     <el-select size="mini" v-model="listQuery.coin" placeholder="币种" clearable  style="width: 120px;margin-left:20px;margin-top:10px;" class="filter-item">
+                      <el-option v-for="(item,index) in coin1" :key="index" :label="item.currency_name" :value="item.currency_name" />
                     </el-select>
-                      <el-select size="mini" v-model="listQuery.order_type" placeholder="订单类型" clearable   style="width: 160px;margin-left:20px;" class="filter-item">
+                      <el-select size="mini" v-model="listQuery.order_type" placeholder="订单类型"    style="width: 160px;margin-left:20px;" class="filter-item">
                       <el-option v-for="(item,index) in orderTypeOptions" :key="index" :label="item.position_type_name" :value="item.key" />
                     </el-select>
                     <span style="margin-left:20px;font-size:12px;">成交时间</span>
                     <el-date-picker
                     style="width:220px;margin-top:10px;"
-                      v-model="listQuery.trade_time"
+                      v-model="filterTime"
                       size="mini"
                       type="daterange"
                       range-separator="-"
                       start-placeholder="起始日期"
                       end-placeholder="结束日期"
                       value-format="timestamp"
+                      @change='filterTimeTransform'
                       >
                     </el-date-picker>
                   
-                    <el-button  class="filter-item" size="mini" type="primary" @click="handleFilter">
+                    <el-button  class="filter-item" style="margin-left:10px;" size="mini" type="primary" @click="handleFilter">
                         搜索
                     </el-button>
                     <el-button class="filter-item" :loading="downloadLoading" @click="handleDownload" size="mini" type="success" >
@@ -110,21 +111,22 @@
                       <el-input size="mini" v-model="listQuerys.account" placeholder="UID/手机/邮箱" style="width:150px;" class="filter-item" @keyup.enter.native="handleFilters"/>
                       <el-input v-model="listQuerys.superior " size="mini" placeholder="上级代理ID/用户名" style="width:150px;margin-left:20px" class="filter-item"  @keyup.enter.native="handleFilters"/>
                       <el-select size="mini" v-model="listQuerys.coin" placeholder="币种" clearable   style="width: 120px;margin-left:20px;margin-top:10px;" class="filter-item">
-                        <el-option v-for="(item,index) in coinOptions" :key="index" :label="item.Currency_name" :value="item.key" />
+                        <el-option v-for="(item,index) in coin2" :key="index" :label="item.currency_name" :value="item.currency_name" />
                       </el-select>
-                        <el-select size="mini" v-model="listQuerys.order_type" placeholder="订单类型" clearable   style="width:120px;margin-left:20px;" class="filter-item">
+                        <el-select size="mini" v-model="listQuerys.order_type" placeholder="订单类型"   style="width:120px;margin-left:20px;" class="filter-item">
                         <el-option v-for="(item,index) in orderTypeOption" :key="index" :label="item.position_type_name" :value="item.key" />
                       </el-select>
                       <span style="margin-left:20px;font-size:12px;">成交时间</span>
                       <el-date-picker
                       style="width:220px;margin-top:10px;"
-                        v-model="listQuerys.trade_time"
+                        v-model="filterTimes"
                         size="mini"
                         type="daterange"
                         range-separator="-"
                         start-placeholder="起始日期"
                         end-placeholder="结束日期"
                          value-format="timestamp"
+                         @change='filterTimeTransforms'
                         >
                       </el-date-picker>
                     
@@ -225,10 +227,7 @@ import {financiaList,financiaExport,contractList,contractExport} from '@/api/fun
 // 转换时间的在src/utils.index.js
 import { parseTime } from '@/utils'
 
-const coinOptions = [
-    {key:'USDT',Currency_name:'USDT'},
-     {key:'BTC',Currency_name:'BTC'}
-]
+import Cookies from 'js-cookie'
   //钱包账户的订单类型
    const orderTypeOptions = [
       {key:0,position_type_name:'全部订单'},
@@ -236,10 +235,10 @@ const coinOptions = [
       {key:2, position_type_name:'提币'},
        {key:4, position_type_name:'钱包账户划转到合约账户'},
       {key:8, position_type_name:'合约账户划转到钱包账户'},
-      {key:16, position_type_name:'邀请佣金奖励'},
+      // {key:16, position_type_name:'邀请佣金奖励'},
       {key:32, position_type_name:'代理佣金奖励'},
       {key:64, position_type_name:'法币入金'},
-      {key:128, position_type_name:'空投奖励'},
+      // {key:128, position_type_name:'空投奖励'},
     ]
     //合约账户的订单类型
    const orderTypeOption = [
@@ -262,7 +261,6 @@ export default {
      downloadLoading:false,
       //合约账户表格下载
      downloadLoadings:false,
-     coinOptions,
      orderTypeOptions,
      orderTypeOption,
     //钱包账户表格加载中效果
@@ -275,24 +273,32 @@ export default {
         account: '',//UID/手机/邮箱
         coin:'',//币种
         order_type:0,//交易类型 -1-不筛选 0: 市价单 1：计划单 2：止盈单 4：止损单 5：强平单
-        trade_time:[],//成交时间 
+        trade_time:{
+          start:undefined,
+          end:undefined
+        },//成交时间 
       },
         page:{//分页参数
           size:1,//页码(从0开始)
           count:10//单页数据量(最大100)
         },
+        filterTime:[],
       //合约账户页数页码以及搜索
        listQuerys: {
          superior:'',//上级代理ID/用户名
         account: '',//UID/手机/邮箱
         coin:'',//币种
         order_type:0,//交易类型 -1-不筛选 0: 市价单 1：计划单 2：止盈单 4：止损单 5：强平单
-        trade_time:[],//成交时间
+        trade_time:{
+          start:undefined,
+          end:undefined
+        },//成交时间
       },
         pages:{//分页参数
           size:1,//页码(从0开始)
           count:10//单页数据量(最大100)
         },
+        filterTimes:[],
       //钱包账户总数据接受
        financiaList:null,
         //合约账户总数据接受
@@ -301,6 +307,8 @@ export default {
       total:0,
       //合约账户总条数
       totals:0,
+      coin1:[],
+      coin2:[]
     };
  },
 
@@ -311,6 +319,9 @@ export default {
  mounted(){
      this.getList()
      this.getLists()
+     this.coin1 = JSON.parse(Cookies.get('currency_list'))
+     this.coin2 = JSON.parse(Cookies.get('currency_list'))
+     console.log(this.coin1,this.coin2)
  },
 
  methods: {
@@ -319,18 +330,6 @@ export default {
         var that = this
         //开始有加载中效果
         that.listLoading = true
-         let starttime = null,stoptime = null
-            if (that.listQuery.trade_time) {
-              if (that.listQuery.trade_time.length === 2) {
-                starttime = that.listQuery.trade_time[0];
-                stoptime = that.listQuery.trade_time[1];
-              } else if (that.listQuery.trade_time.length === 1) {
-                starttime = that.listQuery.trade_time[0];
-              }
-              // console.log(that.listQuery.register_time.length);
-            } else {
-              console.log("没有选择任何时间");
-            }
         var data = {
             page:{
               page:that.page.size-1,
@@ -341,8 +340,8 @@ export default {
             coin:that.listQuery.coin,
             order_type:that.listQuery.order_type,
             trade_time:{
-              start:starttime/1000,
-              end:stoptime/1000
+              start:that.listQuery.trade_time.start,
+              end:that.listQuery.trade_time.end
             }
         }
         financiaList({data}).then(response=>{
@@ -351,13 +350,7 @@ export default {
             if(that.page.size==1){
               that.total = response.data.total_count
             }
-
-            //  console.log(that.financiaList)
-            // 过了1.5秒就关闭
-               setTimeout(() => {
-                    this.listLoading = false
-                    }, 1.5 * 1000)
-               
+             this.listLoading = false
           }else{
             that.$message.error('数据未请求到!!')
           }
@@ -367,18 +360,6 @@ export default {
         var that = this
         //开始有加载中效果
         that.listLoadings = true
-        let starttime = null,stoptime = null
-            if (that.listQuerys.trade_time) {
-              if (that.listQuerys.trade_time.length === 2) {
-                starttime = that.listQuerys.trade_time[0];
-                stoptime = that.listQuerys.trade_time[1];
-              } else if (that.listQuerys.trade_time.length === 1) {
-                starttime = that.listQuerys.trade_time[0];
-              }
-              // console.log(that.listQuery.register_time.length);
-            } else {
-              console.log("没有选择任何时间");
-            }
         var data = {
             page:{
               page:that.pages.size-1,
@@ -389,8 +370,8 @@ export default {
             coin:that.listQuerys.coin,
             order_type:that.listQuerys.order_type,
             trade_time:{
-              start:starttime/1000,
-              end:stoptime/1000
+              start:that.listQuerys.trade_time.start,
+              end:that.listQuerys.trade_time.end
             }
         }
         contractList({data}).then(response=>{
@@ -399,11 +380,7 @@ export default {
             if(that.pages.size==1){
               that.totals = response.data.total_count
             }
-            //  console.log(that.financiaLists)
-            // 过了1.5秒就关闭
-               setTimeout(() => {
                     this.listLoadings = false
-                    }, 1.5 * 1000)
                
           }else{
             that.$message.error('数据未请求到!!')
@@ -422,26 +399,14 @@ export default {
        handleDownload() {
         var that = this
           that.downloadLoading = true
-          let starttime = 0,stoptime = 0
-                if (that.listQuery.trade_time) {
-                  if (that.listQuery.trade_time.length === 2) {
-                    starttime = that.listQuery.trade_time[0];
-                    stoptime = that.listQuery.trade_time[1];
-                  } else if (that.listQuery.trade_time.length === 1) {
-                    starttime = that.listQuery.trade_time[0];
-                  }
-                  // console.log(that.listQuery.register_time.length);
-                } else {
-                  console.log("没有选择任何时间");
-                }
                 var data = {
                     account:that.listQuery.account,
                     superior:that.listQuery.superior,
                     coin:that.listQuery.coin,
                     order_type:that.listQuery.order_type,
                     trade_time:{
-                      start:starttime/1000,
-                      end:stoptime/1000
+                      start:that.listQuery.trade_time.start,
+                      end:that.listQuery.trade_time.end
                     }
                 }
       financiaExport({data}).then(res=>{
@@ -464,26 +429,14 @@ export default {
        handleDownloads() {
          var that = this
           that.downloadLoading = true
-          let starttime = 0,stoptime = 0
-                if (that.listQuerys.trade_time) {
-                  if (that.listQuerys.trade_time.length === 2) {
-                    starttime = that.listQuerys.trade_time[0];
-                    stoptime = that.listQuerys.trade_time[1];
-                  } else if (that.listQuerys.trade_time.length === 1) {
-                    starttime = that.listQuerys.trade_time[0];
-                  }
-                  // console.log(that.listQuery.register_time.length);
-                } else {
-                  console.log("没有选择任何时间");
-                }
                 var data = {
                     account:that.listQuerys.account,
                     superior:that.listQuerys.superior,
                     coin:that.listQuerys.coin,
                     order_type:that.listQuerys.order_type,
                     trade_time:{
-                      start:starttime/1000,
-                      end:stoptime/1000
+                      start:that.listQuerys.trade_time.start,
+                      end:that.listQuerys.trade_time.end
                     }
                 }
       contractExport({data}).then(res=>{
@@ -501,6 +454,14 @@ export default {
           }
         })
 
+    },
+     filterTimeTransform(val) {
+      this.listQuery.trade_time.start = val && val[0]/1000 || undefined
+      this.listQuery.trade_time.end= val && (val[1]+86399000)/1000 || undefined;
+    },
+     filterTimeTransforms(val) {
+      this.listQuerys.trade_time.start = val && val[0]/1000 || undefined
+      this.listQuerys.trade_time.end= val && (val[1]+86399000)/1000 || undefined;
     },
  
  }

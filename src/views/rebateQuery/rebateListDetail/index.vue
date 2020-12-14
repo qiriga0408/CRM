@@ -10,7 +10,6 @@
         <th>统计时间</th>
         <th>发放时间</th>
       </tr>
-      
       <tr>
         <td>{{rebateList.user_id}}</td>
         <td>{{rebateList.account}}</td>
@@ -29,19 +28,17 @@
       
     </table>
 
-
      <div class="filter-container">
             <el-input size="mini" v-model="listQuery.account" placeholder="UID/手机/邮箱" style="width:150px;" class="filter-item" @keyup.enter.native="handleFilter"/>
             <el-input v-model="listQuery.superior" size="mini" placeholder="上级代理ID/用户名" style="width:160px;margin-left:20px" class="filter-item" @keyup.enter.native="handleFilter" />
            
-            <el-button  class="filter-item" size="mini" type="primary" @click="handleFilter">
+            <el-button  class="filter-item" style="margin-left:10px;" size="mini" type="primary" @click="handleFilter">
                 搜索
             </el-button>
             <el-button class="filter-item" :loading="downloadLoading" @click="handleDownload" size="mini" type="success" >
                 导出
             </el-button>
         </div>
-
         <el-table
             v-loading="listLoading"
             :data="rebateDetailList"
@@ -83,7 +80,7 @@
       </el-table-column>
        <el-table-column label="返佣比例" align="center" min-width="100px">
         <template slot-scope="{row}">
-            <span>{{row.rebate_rate}}</span>
+            <span>{{row.rebate_rate}}%</span>
         </template>
       </el-table-column>
        <el-table-column label="返佣金额" align="center" min-width="100px">
@@ -91,16 +88,13 @@
            <span>{{row.rebate_amount}}</span>
         </template>
       </el-table-column>
-      
        <el-table-column label="操作" align="center" min-width="120px">
         <template slot-scope="{row}">
            <el-button size="mini" @click="viewClick(row.user_id)">查看</el-button>
         </template>
       </el-table-column> 
     </el-table> 
-
     <pagina-tion :total="total" :page.sync="page.size" :limit.sync="page.count" @pagination="rebatelistDetail" />
-
     <el-dialog
       v-dialogDrag
       :visible.sync="viewDialogVisible"
@@ -137,12 +131,11 @@
             <span>{{row.lever}}</span> 
         </template>
       </el-table-column>
-      <el-table-column label="张数" align="center" min-width="95px">
+      <el-table-column label="数量" align="center" min-width="95px">
         <template slot-scope="{row}">
-          <span>{{row.volume}}</span> 
+          <span>{{row.volume}}张</span><span>/{{row.amount}}{{row.base_name}}</span>
         </template>
       </el-table-column>
-      
        <el-table-column label="成交价" align="center" min-width="100px">
         <template slot-scope="{row}">
             <span>{{row.price}}</span>
@@ -153,7 +146,6 @@
            <span>{{row.commission}}</span>
         </template>
       </el-table-column>
-      
        <el-table-column label="交易类型" align="center" min-width="120px">
         <template slot-scope="{row}">
             <span v-if="row.order_type=='0'">市价单</span>
@@ -161,7 +153,6 @@
             <span v-else-if="row.order_type=='2'">止盈单</span>
             <span v-else-if="row.order_type=='4'">止损单</span>
             <span v-else-if="row.order_type=='5'">强平单</span>
-          
         </template>
       </el-table-column> 
       <el-table-column label="成交时间" align="center" min-width="90px">
@@ -172,13 +163,10 @@
       </el-table-column>
     </el-table> 
     <pagina-tion :total="viewtotal" :page.sync="viewpage.size" :limit.sync="viewpage.count" @pagination="viewClicks" /> 
-
       <span slot="footer" class="dialog-footer">
         <el-button @click="viewDialogVisible = false">关闭</el-button>
       </span>
     </el-dialog>
-        
-
  </div>
 </template>
 
@@ -186,7 +174,6 @@
 import {rebateDetail,rebateDetailExport,rebateDetailView} from '@/api/rebateQuery'
 // 转换时间的在src/utils.index.js
 import { parseTime } from '@/utils'
-
 const CurrencyOptions = [
     {key:'USBT',Currency_name:'USBT'},
      {key:'PT',Currency_name:'普通'}
@@ -207,7 +194,6 @@ export default {
       //详情带进来的数据
       rebateList:null,
        //页数页码以及搜索
-    //页数页码以及搜索
        listQuery: {
          grant_time:'',
         account: '',//UID/手机/邮箱
@@ -239,10 +225,9 @@ export default {
  computed: {},
 
  mounted(){
-   this.rebateList = this.$route.query.row
-  this.id = this.$route.query.row.id
-    this.rebatelistDetail();
-   
+     this.rebateList = this.$route.query.row
+     this.id = this.$route.query.row.id
+     this.rebatelistDetail();
  },
 
  methods: {
@@ -259,21 +244,16 @@ export default {
         superior:that.listQuery.superior
       }
       rebateDetail({data}).then(res=>{
-        // console.log(res)
         if(res.ret==0){
           that.rebateDetailList = res.data.list
           if(that.page.size==1){
              that.total = res.data.total_count
           }
-           // 过了1.5秒就关闭
-               setTimeout(() => {
-                    that.listLoading = false
-                    }, 1.5 * 1000)
+              that.listLoading = false
         }else{
           that.$message.error('数据未请求到!!')
         }
       })
-     
     },
       // 搜索事件
      handleFilter() {
@@ -327,19 +307,12 @@ export default {
           if(this.viewpage.size==1){
             this.viewtotal = res.data.total_count
           }
-           // 过了1.5秒就关闭
-               setTimeout(() => {
-                    this.viewlistLoading = false
-                   }, 1.5 * 1000)
+             this.viewlistLoading = false
         }else{
           this.$message.error('数据未请求到!!')
         }
       })
-
-
     }
-  
-  //  
  }
 }
 

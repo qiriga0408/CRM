@@ -58,32 +58,55 @@ export const constantRoutes = [{
     },
 ]
 
+// {
+//     path:'/userQuery',
+//     component:Layout,
+//     redirect:'/userQuery/userlist',
+//     name:'userlist',
+//     meta:{title:'用户查询',icon:'el-icon-s-custom',roles: ['admin']},
+//     children:[{
+//             path:'userlist',
+//             name:'userList',
+//             component:()=>import('@/views/userQuery/userList/index'),
+//             meta:{title:'用户列表',icon:'el-icon-s-custom',roles: ['admin']}
+//         },
+//         {
+//             path:'userlistdetail',
+//             name:'userListDetail',
+//             component:()=>import('@/views/userQuery/userListDetail'),
+//             meta:{title:'用户信息详情',icon:'el-icon-s-custom',roles: ['admin']},
+//             hidden:true
+//         }
+//     ]
+// },
 /**
  * asyncRoutes
  * the routes that need to be dynamically loaded based on user roles
  */
 export const asyncRoutes = [
-    {
-        path:'/userQuery',
-        component:Layout,
-        redirect:'/userQuery/userlist',
-        name:'userlist',
-        meta:{title:'用户查询',icon:'el-icon-s-custom',roles: ['admin']},
-        children:[{
-                path:'userlist',
-                name:'userList',
-                component:()=>import('@/views/userQuery/userList/index'),
-                meta:{title:'用户列表',icon:'el-icon-s-custom',roles: ['admin']}
-            },
-            {
-                path:'userlistdetail',
-                name:'userListDetail',
-                component:()=>import('@/views/userQuery/userListDetail'),
-                meta:{title:'用户信息详情',icon:'el-icon-s-custom',roles: ['admin']},
-                hidden:true
-            }
-        ]
-    },
+    
+{
+    path:'/userQuery',
+    component:Layout,
+    redirect:'/userQuery/userlist',
+    name:'userlist',
+    alwaysShow: true, //一直显示根路由
+    meta:{title:'用户查询',icon:'el-icon-s-custom',roles: ['admin']},
+    children:[{
+            path:'userlist',
+            name:'userList',
+            component:()=>import('@/views/userQuery/userList/index'),
+            meta:{title:'用户列表',icon:'el-icon-s-custom',roles: ['admin']}
+        },
+        {
+            path:'userlistdetail',
+            name:'userListDetail',
+            component:()=>import('@/views/userQuery/userListDetail'),
+            meta:{title:'用户信息详情',icon:'el-icon-s-custom',roles: ['admin']},
+            hidden:true
+        }
+    ]
+},
     {
         path:'/transactionQuery',
         component:Layout,
@@ -142,6 +165,7 @@ export const asyncRoutes = [
         redirect:'/rebateQuery/rebateList',
         name:'rebateList',
         meta:{title:'返佣查询',icon:'el-icon-coin',roles: ['admin']},
+        alwaysShow: true, //一直显示根路由
         children:[{
             path:'rebateList',
             name:'rebatelist',

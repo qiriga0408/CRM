@@ -22,7 +22,7 @@ export function levelList(data) {
     return request({
       url: '/crm/v1/trade/close/list',
       method: 'post',
-      data
+      data,
     })
   }
    //平仓查询数据导出

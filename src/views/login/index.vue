@@ -171,13 +171,13 @@ export default {
           //登陆成功以后获取币种列表然后存进cookie
             currency_list(data).then(res=>{
                 // var currency_list = {}
-                Cookies.set('currency_list',res.data)
+                Cookies.set('currency_list',JSON.stringify(res.data))
                 // console.log(res.data)
             })
             //登陆成功以后获取合约列表然后存进cookie
              contract_list(data).then(res=>{
                 // var currency_list = {}
-                Cookies.set('contract_list',res.data)
+                Cookies.set('contract_list',JSON.stringify(res.data))
             })
              
         }else if(res.ret == -11002){

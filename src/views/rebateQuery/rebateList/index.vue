@@ -3,42 +3,42 @@
        <div class="filter-container">
             <el-input size="mini" v-model="listQuery.account" placeholder="UID/手机/邮箱" style="width:150px;" class="filter-item" @keyup.enter.native="handleFilter"/>
                 <el-input v-model="listQuery.superior " size="mini" placeholder="上级代理ID/用户名" style="width:150px;margin-left:20px" class="filter-item"  @keyup.enter.native="handleFilter"/>
-              <el-select size="mini" v-model="listQuery.state" placeholder="状态" clearable   style="width: 120px;margin-left:20px;" class="filter-item">
+              <el-select size="mini" v-model="listQuery.state" placeholder="状态"   style="width: 120px;margin-left:20px;" class="filter-item">
               <el-option v-for="(item,index) in stateOptions" :key="index" :label="item.order_type_name" :value="item.key" />
              </el-select>
              <span style="margin-left:20px;font-size:12px;">统计时间</span>
             <el-date-picker
             style="width:220px;margin-top:10px;"
-              v-model="listQuery.count_time"
+              v-model="filterTime1"
               size="mini"
               type="daterange"
               range-separator="-"
               start-placeholder="起始日期"
               end-placeholder="结束日期"
               value-format="timestamp"
+              @change='filterTimeTransform1'
               >
             </el-date-picker>
              <span style="margin-left:20px;font-size:12px;">发放时间</span>
             <el-date-picker
             style="width:220px;margin-top:10px;"
-              v-model="listQuery.grant_time"
+              v-model="filterTime2"
               size="mini"
               type="daterange"
               range-separator="-"
               start-placeholder="起始日期"
               end-placeholder="结束日期"
               value-format="timestamp"
+              @change='filterTimeTransform2'
               >
             </el-date-picker>
-           
-            <el-button  class="filter-item" size="mini" type="primary" @click="handleFilter">
+            <el-button  class="filter-item" style="margin-left:10px;" size="mini" type="primary" @click="handleFilter">
                 搜索
             </el-button>
             <el-button class="filter-item" :loading="downloadLoading" @click="handleDownload" size="mini" type="success" >
                 导出
             </el-button>
         </div>
-
          <el-table
             v-loading="listLoading"
             :data="rebateList"
@@ -47,10 +47,8 @@
             highlight-current-row
             style="width: 100%;margin-top:30px;"
             :header-cell-style="{'background':'#F0F8FF'}"
-
             >
       <el-table-column label="UID" prop="uid"  align="center" min-width="60" >
-      <!-- sortable="custom" :class-name="getSortClass('id')" -->
         <template slot-scope="{row}">
           <span>{{ row.user_id }}</span>
         </template>
@@ -112,22 +110,13 @@
            <el-button size="mini" @click="DetailClick(row)">查看</el-button>
         </template>
       </el-table-column>
-     
     </el-table>
-
- 
-       
-<pagina-tion :total="total" :page.sync="page.size" :limit.sync="page.count" @pagination="getList" />
-
-
+      <pagina-tion :total="total" :page.sync="page.size" :limit.sync="page.count" @pagination="getList" />
     </div>
 </template>
 
 <script>
-// import Page from '@/components/Pagination'
-
 import {rebateList,rebateExport} from '@/api/rebateQuery'
-
 // 转换时间的在src/utils.index.js
 import { parseTime } from '@/utils'
 
@@ -142,31 +131,37 @@ const stateOptions = [
 ]
 export default {
     name:'rebatelist',
-      // components: { Page:Page },
- data () {
- return {
- 
-      //表格下载
-     downloadLoading:false,
-     stateOptions,
-     CurrencyOptions,
-    //表格加载中效果
-    listLoading:false,
-     //页数页码以及搜索
-       listQuery: {
-         superior:'',
-        account: '',//UID/手机/邮箱
-        state:0,//发放状态 1-待发放 2-已发放
-        count_time:[],//统计时间
-        grant_time:[],//发放时间
-      },
-       page:{//分页参数
-          size:1,//页码(从0开始)
-          count:10//单页数据量(最大100)
-        },
-      rebateList:null,
-      total:0,
-    };
+     data () {
+        return {
+          //表格下载
+        downloadLoading:false,
+        stateOptions,
+        CurrencyOptions,
+        //表格加载中效果
+        listLoading:false,
+        //页数页码以及搜索
+          listQuery: {
+            superior:'',
+            account: '',//UID/手机/邮箱
+            state:0,//发放状态 1-待发放 2-已发放
+            count_time:{
+              start:undefined,
+              end:undefined
+            },//统计时间
+            grant_time:{
+              start:undefined,
+              end:undefined
+            },//发放时间
+          },
+          filterTime1:[],
+          filterTime2:[],
+          page:{//分页参数
+              size:1,//页码(从0开始)
+              count:10//单页数据量(最大100)
+            },
+          rebateList:null,
+          total:0,
+        };
  },
 
  components: {},
@@ -178,36 +173,11 @@ export default {
  },
 
  methods: {
- 
         //  渲染table列表
        getList(){
         var that = this
         //开始有加载中效果
         that.listLoading = true
-         let starttime = null,stoptime = null
-            if (that.listQuery.count_time) {
-              if (that.listQuery.count_time.length === 2) {
-                starttime = that.listQuery.count_time[0];
-                stoptime = that.listQuery.count_time[1];
-              } else if (that.listQuery.count_time.length === 1) {
-                starttime = that.listQuery.count_time[0];
-              }
-              // console.log(that.listQuery.register_time.length);
-            } else {
-              console.log("没有选择任何时间");
-            }
-             let starttimes = null,stoptimes = null
-              if (that.listQuery.grant_time) {
-                if (that.listQuery.grant_time.length === 2) {
-                  starttimes = that.listQuery.grant_time[0];
-                  stoptimes = that.listQuery.grant_time[1];
-                } else if (that.listQuery.grant_time.length === 1) {
-                  starttimes = that.listQuery.grant_time[0];
-                }
-                // console.log(that.listQuery.register_time.length);
-              } else {
-                console.log("没有选择任何时间");
-              }
         var data = {
             page:{
               page:that.page.size-1,
@@ -217,12 +187,12 @@ export default {
             superior:that.listQuery.superior,
             state:that.listQuery.state,
             count_time:{
-              start:starttime/1000,
-              end:stoptime/1000
+              start:that.listQuery.count_time.start,
+              end:that.listQuery.count_time.end
             },
             grant_time:{
-              start:starttimes/1000,
-              end:stoptimes/1000
+              start:that.listQuery.grant_time.start,
+              end:that.listQuery.grant_time.end
             }
         }
         rebateList({data}).then(response=>{
@@ -231,13 +201,7 @@ export default {
              if(that.page.size==1){
                that.total = response.data.total_count
              }
-             
-            //  console.log(that.rebateList)
-            // 过了1.5秒就关闭
-               setTimeout(() => {
-                    this.listLoading = false
-                    }, 1.5 * 1000)
-               
+                this.listLoading = false
           }else{
             that.$message.error('数据未请求到!!')
           }
@@ -260,30 +224,6 @@ export default {
          var that = this
         //开始有加载中效果
          this.downloadLoading = true
-         let starttime = null,stoptime = null
-            if (that.listQuery.count_time) {
-              if (that.listQuery.count_time.length === 2) {
-                starttime = that.listQuery.count_time[0];
-                stoptime = that.listQuery.count_time[1];
-              } else if (that.listQuery.count_time.length === 1) {
-                starttime = that.listQuery.count_time[0];
-              }
-              // console.log(that.listQuery.register_time.length);
-            } else {
-              console.log("没有选择任何时间");
-            }
-             let starttimes = null,stoptimes = null
-              if (that.listQuery.grant_time) {
-                if (that.listQuery.grant_time.length === 2) {
-                  starttimes = that.listQuery.grant_time[0];
-                  stoptimes = that.listQuery.grant_time[1];
-                } else if (that.listQuery.grant_time.length === 1) {
-                  starttimes = that.listQuery.grant_time[0];
-                }
-                // console.log(that.listQuery.register_time.length);
-              } else {
-                console.log("没有选择任何时间");
-              }
         var data = {
             page:{
               page:that.page.size-1,
@@ -293,17 +233,16 @@ export default {
             superior:that.listQuery.superior,
             state:that.listQuery.state,
             count_time:{
-              start:starttime/1000,
-              end:stoptime/1000
+              start:that.listQuery.count_time.start,
+              end:that.listQuery.count_time.end,
             },
             grant_time:{
-              start:starttimes/1000,
-              end:stoptimes/1000
+              start:that.listQuery.grant_time.start,
+              end:that.listQuery.grant_time.end,
             }
         }
      
        rebateExport({data}).then(res=>{
-          // console.log(res)
           if(res.ret == 0){
              open(res.data.download_url,"");
              this.downloadLoading = false
@@ -317,10 +256,20 @@ export default {
           }
         })
     },
+         filterTimeTransform1(val) {
+            this.listQuery.count_time.start = val && val[0]/1000 || undefined
+            this.listQuery.count_time.end= val && (val[1]+86399000)/1000 || undefined;
+          },
+            filterTimeTransform2(val) {
+              console.log(val)
+            this.listQuery.grant_time.start = val && val[0]/1000 || undefined
+            this.listQuery.grant_time.end = val && (val[1]+86399000)/1000 || undefined;
+          },
     
  }
 }
 
 </script>
 <style lang="scss" scoped>
+
 </style>

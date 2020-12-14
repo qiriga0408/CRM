@@ -14,7 +14,7 @@ export function parseTime(time, cFormat) {
   }
   const format = cFormat || '{y}-{m}-{d} {h}:{i}:{s}'
   let date
-  if (typeof time === 'object') {
+  if (typeof time === 'object'){
     date = time
   } else {
     if ((typeof time === 'string')) {
@@ -22,8 +22,6 @@ export function parseTime(time, cFormat) {
         // support "1548221490638"
         time = parseInt(time)
       } else {
-        // support safari
-        // https://stackoverflow.com/questions/4310953/invalid-date-in-safari
         time = time.replace(new RegExp(/-/gm), '/')
       }
     }
